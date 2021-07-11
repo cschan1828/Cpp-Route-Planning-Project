@@ -37,10 +37,10 @@ void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
     current_node->FindNeighbors();
     for (RouteModel::Node *node: current_node->neighbors){
         node->parent = current_node;
+        node->g_value = current_node->g_value + current_node->distance(*node);
         node->h_value = CalculateHValue(node);
-        node->g_value += current_node->distance(*node);
-        node->visited = true;
         open_list.push_back(node);
+        node->visited = true;
     }
 }
 
@@ -62,7 +62,7 @@ RouteModel::Node *RoutePlanner::NextNode() {
 
     std::sort(open_list.begin(), open_list.end(), CompareCost);
 
-    RouteModel::Node* node = open_list.front();
+    RouteModel::Node* node = open_list.back();
     open_list.pop_back();
 
     return node;
@@ -103,15 +103,16 @@ std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node 
 void RoutePlanner::AStarSearch() {
     RouteModel::Node *current_node = nullptr;
 
-    // Not sure why the following code cannot pass unit test.
-    // RouteModel::Node *current_node = start_node;
-
     // TODO: Implement your solution here.
-    while( (current_node!=end_node) && (!open_list.empty()) ){
-        AddNeighbors(current_node);
+    AddNeighbors(start_node);
+    while(!open_list.empty()){
         RouteModel::Node node = *RoutePlanner::NextNode();
-        *current_node = node;
+        current_node = &node;
+        current_node->visited = true;
+        if (current_node==end_node){
+            m_Model.path = RoutePlanner::ConstructFinalPath(current_node);
+            break;
+        }
+        AddNeighbors(current_node);
     }
-
-    m_Model.path = RoutePlanner::ConstructFinalPath(current_node);
 }
